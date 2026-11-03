@@ -1,0 +1,72 @@
+name: Release
+
+# Push a tag like v0.1.0 to build a universal .dmg and publish a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    env:
+      HAS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE != '' }}
+      HAS_NOTARY: ${{ secrets.APPLE_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test
+        run: scripts/test.sh
+
+      # Signing and notarization turn on automatically once these repository
+      # secrets exist: MACOS_CERTIFICATE (base64 .p12), MACOS_CERTIFICATE_PASSWORD,
+      # CODESIGN_IDENTITY, APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD.
+      - name: Import signing certificate
+        if: env.HAS_CERTIFICATE == 'true'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/build.keychain"
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+
+      - name: Store notarization credentials
+        if: env.HAS_NOTARY == 'true'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: |
+          xcrun notarytool store-credentials gingerbrew \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
+          echo "NOTARIZE=1" >> "$GITHUB_ENV"
+          echo "NOTARY_PROFILE=gingerbrew" >> "$GITHUB_ENV"
+
+      - name: Build .dmg
+        env:
+          VERSION: ${{ github.ref_name }}
+          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
+        run: |
+          export VERSION="${VERSION#v}"
+          [[ -z "$CODESIGN_IDENTITY" ]] && unset CODESIGN_IDENTITY
+          UNIVERSAL=1 DMG=1 scripts/build-app.sh | tee build.log
+          echo "SHA256=$(shasum -a 256 dist/Gingerbrew-$VERSION.dmg | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "DMG_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" "dist/Gingerbrew-$DMG_VERSION.dmg" \
+            --title "Gingerbrew $DMG_VERSION" --generate-notes \
+            --notes "SHA-256: \`$SHA256\`"
