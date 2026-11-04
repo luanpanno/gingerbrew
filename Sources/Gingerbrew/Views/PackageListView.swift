@@ -168,12 +168,9 @@ struct PackageListView: View {
             Menu {
                 Button("Settings…") { showSettings() }
                     .keyboardShortcut(",")
-                Button("About Gingerbrew") {
-                    NSApp.activate(ignoringOtherApps: true)
-                    NSApp.orderFrontStandardAboutPanel(nil)
-                }
+                Button("About Gingerbrew") { AppActions.showAbout() }
                 Divider()
-                Button("Quit Gingerbrew") { NSApp.terminate(nil) }
+                Button("Quit Gingerbrew") { AppActions.quit() }
                     .keyboardShortcut("q")
             } label: {
                 Image(systemName: "gearshape")
@@ -202,8 +199,7 @@ struct PackageListView: View {
     }
 
     private func showSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        openSettings()
+        AppActions.openSettings(openSettings)
     }
 }
 

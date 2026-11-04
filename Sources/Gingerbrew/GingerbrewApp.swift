@@ -29,6 +29,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         #if DEBUG
         if let directory = DebugSnapshots.directory { DebugSnapshots.run(into: directory) }
+        // GINGERBREW_TEST_OPEN=1 opens the panel the way the right-click menu's
+        // "Open Gingerbrew" does, reports whether it appeared, and quits.
+        if ProcessInfo.processInfo.environment["GINGERBREW_TEST_OPEN"] != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                StatusItemMenu.shared.openPanel()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    let panel = NSApp.windows.first { "\(type(of: $0))".hasPrefix("MenuBarExtraWindow") }
+                    print("panel open: \(panel?.isVisible == true)")
+                    fflush(stdout)
+                    NSApp.terminate(nil)
+                }
+            }
+        }
         #endif
     }
 }
@@ -36,8 +49,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 /// The menu bar icon, with the number of available updates next to it.
 struct MenuBarLabel: View {
     let updateCount: Int
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
+        icon
+            .onAppear { StatusItemMenu.shared.install(openSettings: openSettings) }
+    }
+
+    @ViewBuilder
+    private var icon: some View {
         if updateCount > 0 {
             HStack(spacing: 2) {
                 Image(systemName: "mug.fill")
