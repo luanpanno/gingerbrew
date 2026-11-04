@@ -9,9 +9,12 @@ struct PackageRow: View {
             PackageIcon(package: package, size: 28)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(package.displayName)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+                HStack(spacing: 5) {
+                    Text(package.displayName)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                    KindTag(kind: package.kind)
+                }
                 if let summary = package.summary {
                     Text(summary)
                         .font(.caption)
@@ -47,14 +50,22 @@ struct PackageRow: View {
                 .monospacedDigit()
                 .foregroundStyle(.tertiary)
                 .lineLimit(1)
-        } else {
-            Text(package.kind == .cask ? "App" : "Formula")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 1)
-                .background(.quaternary, in: Capsule())
         }
+    }
+}
+
+/// A small capsule saying whether a package is an app (cask) or a formula.
+struct KindTag: View {
+    let kind: PackageKind
+
+    var body: some View {
+        Text(kind == .cask ? "App" : "Formula")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(.quaternary, in: Capsule())
+            .fixedSize()
     }
 }
 

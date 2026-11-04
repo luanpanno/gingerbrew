@@ -59,15 +59,30 @@ struct PackageListView: View {
 
     private var installedList: some View {
         let outdated = model.outdated
-        let upToDate = model.installed.filter { !$0.isOutdated }
+        let requested = model.requestedInstalled.filter { !$0.isOutdated }
+        let dependencies = model.dependencyInstalled.filter { !$0.isOutdated }
+        let expanded = model.settings.dependenciesExpanded
         return List {
             if !outdated.isEmpty {
                 Section("Updates Available") {
                     ForEach(outdated) { row(for: $0) }
                 }
             }
+            // Dependencies share the Installed section, after a disclosure row, so the
+            // collapsed state adds one compact row instead of a whole section gap.
             Section(outdated.isEmpty ? "Installed" : "Up to Date") {
-                ForEach(upToDate) { row(for: $0) }
+                ForEach(requested) { row(for: $0) }
+                if !dependencies.isEmpty {
+                    CollapsibleHeader(title: "Dependencies", count: dependencies.count, isExpanded: expanded) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            model.settings.dependenciesExpanded.toggle()
+                        }
+                    }
+                    .padding(.top, requested.isEmpty ? 0 : 6)
+                    if expanded {
+                        ForEach(dependencies) { row(for: $0) }
+                    }
+                }
             }
         }
         .listStyle(.inset)
@@ -179,7 +194,8 @@ struct PackageListView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
         } else if model.hasLoadedInstalled {
-            Text(model.installed.count == 1 ? "1 package" : "\(model.installed.count) packages")
+            let count = model.installed.count
+            Text(count == 1 ? "1 package" : "\(count) packages")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -188,6 +204,38 @@ struct PackageListView: View {
     private func showSettings() {
         NSApp.activate(ignoringOtherApps: true)
         openSettings()
+    }
+}
+
+/// A section header that shows and hides its rows, with a chevron like Finder's sidebar.
+struct CollapsibleHeader: View {
+    let title: String
+    let count: Int
+    let isExpanded: Bool
+    let toggle: () -> Void
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text("\(count)")
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+
+        .accessibilityLabel("\(title), \(count)")
+        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        .accessibilityHint(isExpanded ? "Hides dependencies" : "Shows dependencies")
     }
 }
 

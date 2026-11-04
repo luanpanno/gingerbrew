@@ -21,6 +21,11 @@ final class AppSettings {
         didSet { defaults.set(notificationsEnabled, forKey: Keys.notifications) }
     }
 
+    /// Whether the Dependencies section of the main list is expanded.
+    var dependenciesExpanded: Bool {
+        didSet { defaults.set(dependenciesExpanded, forKey: Keys.dependenciesExpanded) }
+    }
+
     var lastUpdateCheck: Date? {
         didSet { defaults.set(lastUpdateCheck, forKey: Keys.lastCheck) }
     }
@@ -33,10 +38,12 @@ final class AppSettings {
             Keys.checkInterval: 6,
             Keys.greedy: false,
             Keys.notifications: true,
+            Keys.dependenciesExpanded: false,
         ])
         checkIntervalHours = defaults.integer(forKey: Keys.checkInterval)
         includeAutoUpdatingCasks = defaults.bool(forKey: Keys.greedy)
         notificationsEnabled = defaults.bool(forKey: Keys.notifications)
+        dependenciesExpanded = defaults.bool(forKey: Keys.dependenciesExpanded)
         lastUpdateCheck = defaults.object(forKey: Keys.lastCheck) as? Date
     }
 
@@ -45,5 +52,6 @@ final class AppSettings {
         static let greedy = "includeAutoUpdatingCasks"
         static let notifications = "notificationsEnabled"
         static let lastCheck = "lastUpdateCheck"
+        static let dependenciesExpanded = "dependenciesExpanded"
     }
 }

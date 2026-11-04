@@ -12,6 +12,11 @@ enum DebugSnapshots {
         ProcessInfo.processInfo.environment["GINGERBREW_SNAPSHOT_DIR"].map(URL.init(fileURLWithPath:))
     }
 
+    /// `GINGERBREW_SNAPSHOT_HEIGHT` renders a taller panel to see more of the list.
+    nonisolated static var panelHeight: CGFloat {
+        ProcessInfo.processInfo.environment["GINGERBREW_SNAPSHOT_HEIGHT"].flatMap(Double.init).map { CGFloat($0) } ?? 540
+    }
+
     static func run(into directory: URL) {
         Task {
             try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -65,7 +70,7 @@ enum DebugSnapshots {
     }
 
     private static func makeWindow<V: View>(
-        _ view: V, appearance: NSAppearance.Name, size: NSSize? = NSSize(width: 360, height: 540)
+        _ view: V, appearance: NSAppearance.Name, size: NSSize? = NSSize(width: 360, height: panelHeight)
     ) -> (NSWindow, NSView) {
         let host = NSHostingView(rootView: view.frame(
             width: size?.width, height: size?.height).background(Color(nsColor: .windowBackgroundColor)))

@@ -64,6 +64,12 @@ final class AppModel {
 
     var outdated: [Package] { installed.filter(\.isOutdated) }
 
+    /// Packages you installed yourself: every cask, and formulae installed on request.
+    var requestedInstalled: [Package] { installed.filter(\.isRequested) }
+
+    /// Formulae that are only installed because something else needs them.
+    var dependencyInstalled: [Package] { installed.filter { !$0.isRequested } }
+
     var isSearchActive: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var filteredInstalled: [Package] {
@@ -329,4 +335,8 @@ final class AppModel {
     func keepOperationVisible() {
         dismissTask?.cancel()
     }
+}
+
+extension Package {
+    var isRequested: Bool { kind == .cask || installedOnRequest }
 }
