@@ -4,6 +4,9 @@ A minimal macOS menu bar app for managing [Homebrew](https://brew.sh) packages, 
 
 <p align="center"><img src="Support/AppIcon.png" width="128" alt="Gingerbrew icon"></p>
 
+<img width="367" height="545" alt="image" src="https://github.com/user-attachments/assets/f6aef819-5ba1-4243-8560-47666eef68bb" /> <img width="367" height="545" alt="image" src="https://github.com/user-attachments/assets/0a65d527-f477-4123-bee9-00dd971183cc" />
+
+
 ## Features
 
 - **Installed packages at a glance.** Every formula and cask, with packages that have updates listed first.
